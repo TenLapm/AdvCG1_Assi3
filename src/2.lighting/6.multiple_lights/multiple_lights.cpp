@@ -35,6 +35,10 @@ float lastFrame = 0.0f;
 // lighting
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 
+float jointAngles[4] = { 0.0f, -30.0f, 45.0f, 0.0f }; // base yaw, shoulder pitch, elbow pitch, wrist pitch
+float segLen[3] = { 1.2f, 0.9f, 0.6f }; // lengths for upper, forearm, wrist segment
+
+
 int main()
 {
     // glfw: initialize and configure
@@ -85,7 +89,6 @@ int main()
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
     float vertices[] = {
-        // positions          // normals           // texture coords
         -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
          0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
          0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
@@ -282,32 +285,87 @@ int main()
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, specularMap);
 
-        // render containers
         glBindVertexArray(cubeVAO);
-        for (unsigned int i = 0; i < 10; i++)
-        {
-            // calculate the model matrix for each object and pass it to shader before drawing
-            glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, cubePositions[i]);
-            float angle = 20.0f * i;
-            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-            lightingShader.setMat4("model", model);
 
+        // Base (world)
+        glm::mat4 world = glm::mat4(1.0f);
+        world = glm::translate(world, glm::vec3(0.0f, -1.0f, 0.0f)); // base sits on ground
+
+        // Draw base
+        {
+            glm::mat4 modelBase = world;
+            float baseHeight = 0.2f;
+            modelBase = glm::scale(modelBase, glm::vec3(0.6f, baseHeight, 0.6f));
+            lightingShader.setMat4("model", modelBase);
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
 
-         // also draw the lamp object(s)
-         lightCubeShader.use();
-         lightCubeShader.setMat4("projection", projection);
-         lightCubeShader.setMat4("view", view);
+        // shoulder origin: translate up from base, then apply base yaw (rotate around Y)
+        glm::mat4 shoulderOrigin = world;
+        shoulderOrigin = glm::translate(shoulderOrigin, glm::vec3(0.0f, 0.2f, 0.0f)); // top of base
+        shoulderOrigin = glm::rotate(shoulderOrigin, glm::radians(jointAngles[0]), glm::vec3(0, 1, 0)); // base yaw
+
+        // --- Upper arm ---
+        // upper segment: rotate by shoulder pitch around local X, then move half-length along local Y and scale
+        glm::mat4 upperRot = glm::rotate(shoulderOrigin, glm::radians(jointAngles[1]), glm::vec3(1, 0, 0)); 
+        glm::mat4 upperModel = glm::translate(upperRot, glm::vec3(0.0f, segLen[0] / 2.0f, 0.0f));
+        upperModel = glm::scale(upperModel, glm::vec3(0.2f, segLen[0], 0.2f));
+        lightingShader.setMat4("model", upperModel);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        // elbow origin: this is shoulderOrigin * R(shoulder) * T(0, segLen[0], 0)
+        glm::mat4 elbowOrigin = glm::translate(upperRot, glm::vec3(0.0f, segLen[0], 0.0f)); 
+
+        // --- Forearm (elbow to wrist) ---
+        glm::mat4 foreRot = glm::rotate(elbowOrigin, glm::radians(jointAngles[2]), glm::vec3(1, 0, 0));
+        glm::mat4 foreModel = glm::translate(foreRot, glm::vec3(0.0f, segLen[1] / 2.0f, 0.0f));
+        foreModel = glm::scale(foreModel, glm::vec3(0.18f, segLen[1], 0.18f));
+        lightingShader.setMat4("model", foreModel);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        // wrist origin: elbowOrigin * R(elbow) * T(0, segLen[1], 0)
+        glm::mat4 wristOrigin = glm::translate(foreRot, glm::vec3(0.0f, segLen[1], 0.0f));
+
+        // Wrist segment
+        glm::mat4 wristRot = glm::rotate(wristOrigin, glm::radians(jointAngles[3]), glm::vec3(0, 0, 1));
+        glm::mat4 wristModel = glm::translate(wristRot, glm::vec3(0.0f, segLen[2] / 2.0f, 0.0f));
+        wristModel = glm::scale(wristModel, glm::vec3(0.15f, segLen[2], 0.15f));
+        lightingShader.setMat4("model", wristModel);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        // joint marker
+        lightCubeShader.use();
+        lightCubeShader.setMat4("projection", projection);
+        lightCubeShader.setMat4("view", view);
+
+        // Helper to draw a small cube at a world position
+        auto drawMarker = [&](const glm::vec3& pos, float s = 0.06f) {
+            glm::mat4 m = glm::mat4(1.0f);
+            m = glm::translate(m, pos);
+            m = glm::scale(m, glm::vec3(s));
+            lightCubeShader.setMat4("model", m);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+            };
+
+        // compute joint world positions
+        glm::vec3 shoulderPos = glm::vec3(shoulderOrigin * glm::vec4(0, 0, 0, 1));
+        glm::vec3 elbowPos = glm::vec3(elbowOrigin * glm::vec4(0, 0, 0, 1));
+        glm::vec3 wristPos = glm::vec3(wristOrigin * glm::vec4(0, 0, 0, 1));
+        glm::vec3 endEffectorPos = glm::vec3(glm::translate(wristRot, glm::vec3(0.0f, segLen[2], 0.0f)) * glm::vec4(0, 0, 0, 1));
+
+        // draw markers
+        drawMarker(shoulderPos, 0.06f);
+        drawMarker(elbowPos, 0.055f);
+        drawMarker(wristPos, 0.05f);
+        drawMarker(endEffectorPos, 0.04f);
+
     
-         // we now draw as many light bulbs as we have point lights.
          glBindVertexArray(lightCubeVAO);
          for (unsigned int i = 0; i < 4; i++)
          {
              model = glm::mat4(1.0f);
              model = glm::translate(model, pointLightPositions[i]);
-             model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
+             model = glm::scale(model, glm::vec3(0.2f)); 
              lightCubeShader.setMat4("model", model);
              glDrawArrays(GL_TRIANGLES, 0, 36);
          }
@@ -333,7 +391,7 @@ int main()
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow *window)
+void processInput(GLFWwindow* window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
@@ -346,6 +404,30 @@ void processInput(GLFWwindow *window)
         camera.ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
+
+    // Arm controls (change angles)
+    const float speed = 60.0f; // degrees per second
+
+    // Base yaw (Q/A)
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) jointAngles[0] += speed * deltaTime;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) jointAngles[0] -= speed * deltaTime;
+
+    // Shoulder pitch (W/S)
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) jointAngles[1] += speed * deltaTime;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) jointAngles[1] -= speed * deltaTime;
+
+    // Elbow pitch (R/F)
+    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) jointAngles[2] += speed * deltaTime;
+    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) jointAngles[2] -= speed * deltaTime;
+
+    // Wrist pitch (T/G)
+    if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) jointAngles[3] += speed * deltaTime;
+    if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) jointAngles[3] -= speed * deltaTime;
+
+    // Reset (Z)
+    if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS) {
+        jointAngles[0] = 0.0f; jointAngles[1] = -30.0f; jointAngles[2] = 45.0f; jointAngles[3] = 0.0f;
+    }
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
