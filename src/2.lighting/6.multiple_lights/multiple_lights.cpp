@@ -15,8 +15,8 @@
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-void processInput(GLFWwindow *window);
-unsigned int loadTexture(const char *path);
+void processInput(GLFWwindow* window);
+unsigned int loadTexture(const char* path);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -49,7 +49,7 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 #ifdef __APPLE__
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
     // glfw window creation
@@ -89,6 +89,7 @@ int main()
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
     float vertices[] = {
+        // positions          // normals           // texture coords
         -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
          0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
          0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
@@ -133,23 +134,23 @@ int main()
     };
     // positions all containers
     glm::vec3 cubePositions[] = {
-        glm::vec3( 0.0f,  0.0f,  0.0f),
-        glm::vec3( 2.0f,  5.0f, -15.0f),
+        glm::vec3(0.0f,  0.0f,  0.0f),
+        glm::vec3(2.0f,  5.0f, -15.0f),
         glm::vec3(-1.5f, -2.2f, -2.5f),
         glm::vec3(-3.8f, -2.0f, -12.3f),
-        glm::vec3( 2.4f, -0.4f, -3.5f),
+        glm::vec3(2.4f, -0.4f, -3.5f),
         glm::vec3(-1.7f,  3.0f, -7.5f),
-        glm::vec3( 1.3f, -2.0f, -2.5f),
-        glm::vec3( 1.5f,  2.0f, -2.5f),
-        glm::vec3( 1.5f,  0.2f, -1.5f),
+        glm::vec3(1.3f, -2.0f, -2.5f),
+        glm::vec3(1.5f,  2.0f, -2.5f),
+        glm::vec3(1.5f,  0.2f, -1.5f),
         glm::vec3(-1.3f,  1.0f, -1.5f)
     };
     // positions of the point lights
     glm::vec3 pointLightPositions[] = {
-        glm::vec3( 0.7f,  0.2f,  2.0f),
-        glm::vec3( 2.3f, -3.3f, -4.0f),
+        glm::vec3(0.7f,  0.2f,  2.0f),
+        glm::vec3(2.3f, -3.3f, -4.0f),
         glm::vec3(-4.0f,  2.0f, -12.0f),
-        glm::vec3( 0.0f,  0.0f, -3.0f)
+        glm::vec3(0.0f,  0.0f, -3.0f)
     };
     // first, configure the cube's VAO (and VBO)
     unsigned int VBO, cubeVAO;
@@ -214,7 +215,7 @@ int main()
         lightingShader.setFloat("material.shininess", 32.0f);
 
         /*
-           Here we set all the uniforms for the 5/6 types of lights we have. We have to set them manually and index 
+           Here we set all the uniforms for the 5/6 types of lights we have. We have to set them manually and index
            the proper PointLight struct in the array to set each uniform variable. This can be done more code-friendly
            by defining light types as classes and set their values in there, or by using a more efficient uniform approach
            by using 'Uniform buffer objects', but that is something we'll discuss in the 'Advanced GLSL' tutorial.
@@ -266,7 +267,7 @@ int main()
         lightingShader.setFloat("spotLight.linear", 0.09f);
         lightingShader.setFloat("spotLight.quadratic", 0.032f);
         lightingShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
-        lightingShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));     
+        lightingShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
 
         // view/projection transformations
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
@@ -285,6 +286,9 @@ int main()
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, specularMap);
 
+        // --------------------
+// Corrected articulated arm (no floating parts)
+// --------------------
         glBindVertexArray(cubeVAO);
 
         // Base (world)
@@ -307,14 +311,14 @@ int main()
 
         // --- Upper arm ---
         // upper segment: rotate by shoulder pitch around local X, then move half-length along local Y and scale
-        glm::mat4 upperRot = glm::rotate(shoulderOrigin, glm::radians(jointAngles[1]), glm::vec3(1, 0, 0)); 
+        glm::mat4 upperRot = glm::rotate(shoulderOrigin, glm::radians(jointAngles[1]), glm::vec3(1, 0, 0)); // rotate then...
         glm::mat4 upperModel = glm::translate(upperRot, glm::vec3(0.0f, segLen[0] / 2.0f, 0.0f));
         upperModel = glm::scale(upperModel, glm::vec3(0.2f, segLen[0], 0.2f));
         lightingShader.setMat4("model", upperModel);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         // elbow origin: this is shoulderOrigin * R(shoulder) * T(0, segLen[0], 0)
-        glm::mat4 elbowOrigin = glm::translate(upperRot, glm::vec3(0.0f, segLen[0], 0.0f)); 
+        glm::mat4 elbowOrigin = glm::translate(upperRot, glm::vec3(0.0f, segLen[0], 0.0f)); // rotate already applied in upperRot
 
         // --- Forearm (elbow to wrist) ---
         glm::mat4 foreRot = glm::rotate(elbowOrigin, glm::radians(jointAngles[2]), glm::vec3(1, 0, 0));
@@ -326,14 +330,14 @@ int main()
         // wrist origin: elbowOrigin * R(elbow) * T(0, segLen[1], 0)
         glm::mat4 wristOrigin = glm::translate(foreRot, glm::vec3(0.0f, segLen[1], 0.0f));
 
-        // Wrist segment
-        glm::mat4 wristRot = glm::rotate(wristOrigin, glm::radians(jointAngles[3]), glm::vec3(0, 0, 1));
+        // --- Wrist segment ---
+        glm::mat4 wristRot = glm::rotate(wristOrigin, glm::radians(jointAngles[3]), glm::vec3(0, 0, 1)); // wrist twist (example)
         glm::mat4 wristModel = glm::translate(wristRot, glm::vec3(0.0f, segLen[2] / 2.0f, 0.0f));
         wristModel = glm::scale(wristModel, glm::vec3(0.15f, segLen[2], 0.15f));
         lightingShader.setMat4("model", wristModel);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        // joint marker
+        // --- Draw tiny joint markers (use lightCubeShader or lightingShader; here use lightCubeShader) ---
         lightCubeShader.use();
         lightCubeShader.setMat4("projection", projection);
         lightCubeShader.setMat4("view", view);
@@ -347,7 +351,7 @@ int main()
             glDrawArrays(GL_TRIANGLES, 0, 36);
             };
 
-        // compute joint world positions
+        // compute joint world positions (apply origin transforms to (0,0,0,1))
         glm::vec3 shoulderPos = glm::vec3(shoulderOrigin * glm::vec4(0, 0, 0, 1));
         glm::vec3 elbowPos = glm::vec3(elbowOrigin * glm::vec4(0, 0, 0, 1));
         glm::vec3 wristPos = glm::vec3(wristOrigin * glm::vec4(0, 0, 0, 1));
@@ -359,16 +363,17 @@ int main()
         drawMarker(wristPos, 0.05f);
         drawMarker(endEffectorPos, 0.04f);
 
-    
-         glBindVertexArray(lightCubeVAO);
-         for (unsigned int i = 0; i < 4; i++)
-         {
-             model = glm::mat4(1.0f);
-             model = glm::translate(model, pointLightPositions[i]);
-             model = glm::scale(model, glm::vec3(0.2f)); 
-             lightCubeShader.setMat4("model", model);
-             glDrawArrays(GL_TRIANGLES, 0, 36);
-         }
+
+        // we now draw as many light bulbs as we have point lights.
+        glBindVertexArray(lightCubeVAO);
+        for (unsigned int i = 0; i < 4; i++)
+        {
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, pointLightPositions[i]);
+            model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
+            lightCubeShader.setMat4("model", model);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
 
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -396,13 +401,13 @@ void processInput(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
         camera.ProcessKeyboard(FORWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
         camera.ProcessKeyboard(BACKWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
         camera.ProcessKeyboard(LEFT, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
 
     // Arm controls (change angles)
@@ -471,13 +476,13 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
 // utility function for loading a 2D texture from file
 // ---------------------------------------------------
-unsigned int loadTexture(char const * path)
+unsigned int loadTexture(char const* path)
 {
     unsigned int textureID;
     glGenTextures(1, &textureID);
 
     int width, height, nrComponents;
-    unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
+    unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
     if (data)
     {
         GLenum format;
