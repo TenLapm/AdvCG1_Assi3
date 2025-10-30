@@ -1,0 +1,18 @@
+{
+  "OutputFoldersPerTargetSystem": {
+    "Local Machine": [
+      "out\\build\\x64-Debug",
+      "out\\install\\x64-Debug"
+    ]
+  },
+  "ExpandedNodes": [
+    "",
+    "\\src",
+    "\\src\\1.getting_started",
+    "\\src\\1.getting_started\\2.1.hello_triangle",
+    "\\src\\2.lighting",
+    "\\src\\2.lighting\\6.multiple_lights"
+  ],
+  "SelectedNode": "\\CMakeLists.txt",
+  "PreviewInSolutionExplorer": false
+}
