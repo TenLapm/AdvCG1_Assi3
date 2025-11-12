@@ -369,7 +369,7 @@ int main() {
         return -1;
     }
 
-    const char* kBGMPath = "../../resources/audio/bgm2.mp3";
+    const char* kBGMPath = "../../resources/audio/bgm.mp3";
     const char* kHitPath = "../../resources/audio/hit.mp3";
 
     if (ma_sound_init_from_file(&audioEngine, kBGMPath, MA_SOUND_FLAG_STREAM, NULL, NULL, &bgm) != MA_SUCCESS) {
