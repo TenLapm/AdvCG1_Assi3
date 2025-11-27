@@ -6,8 +6,8 @@
 #include <glm/glm.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/quaternion.hpp>
-#include <glm/gtx/quaternion.hpp>   // now allowed
-#include <glm/gtx/norm.hpp>         // if you use it
+#include <glm/gtx/quaternion.hpp>   
+#include <glm/gtx/norm.hpp>         
 
 #include <glm/glm.hpp>
 #include <map>
@@ -63,8 +63,6 @@ public:
 		m_blendAmount = blend;
 	}
 
-	// Sets an override transform (local-space TRS) for bone named 'boneName'.
-	// weight = [0..1] (0 means no override, 1 means fully use override TRS)
 	void SetBoneOverride(const std::string& boneName, const glm::mat4& overrideTransform, float weight)
 	{
 		if (weight <= 0.0f) {
@@ -134,12 +132,10 @@ public:
 			}
 		}
 
-		// If an override exists for this bone, blend it with the sampled nodeTransform.
 		auto it = m_BoneOverrides.find(nodeName);
 		if (it != m_BoneOverrides.end())
 		{
 			const BoneOverride& bo = it->second;
-			// Decompose both transforms
 			glm::vec3 t0, s0;
 			glm::quat r0;
 			DecomposeTransform(nodeTransform, t0, r0, s0);
