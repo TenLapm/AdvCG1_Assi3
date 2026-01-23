@@ -74,9 +74,11 @@ public:
 	
 	void Update(float animationTime)
 	{
-		glm::mat4 translation = InterpolatePosition(animationTime);
-		glm::mat4 rotation = InterpolateRotation(animationTime);
-		glm::mat4 scale = InterpolateScaling(animationTime);
+		glm::vec3 tmp;
+		glm::quat tmpR;
+		glm::mat4 translation = InterpolatePosition(animationTime, tmp);
+		glm::mat4 rotation = InterpolateRotation(animationTime, tmpR);
+		glm::mat4 scale = InterpolateScaling(animationTime, tmp);
 		m_LocalTransform = translation * rotation * scale;
 	}
 	glm::mat4 GetLocalTransform() { return m_LocalTransform; }
@@ -116,7 +118,7 @@ public:
 	}
 
 
-private:
+//private:
 
 	float GetScaleFactor(float lastTimeStamp, float nextTimeStamp, float animationTime)
 	{
@@ -127,7 +129,7 @@ private:
 		return scaleFactor;
 	}
 
-	glm::mat4 InterpolatePosition(float animationTime)
+	glm::mat4 InterpolatePosition(float animationTime, glm::vec3 &finalPos)
 	{
 		if (1 == m_NumPositions)
 			return glm::translate(glm::mat4(1.0f), m_Positions[0].position);
@@ -138,10 +140,11 @@ private:
 			m_Positions[p1Index].timeStamp, animationTime);
 		glm::vec3 finalPosition = glm::mix(m_Positions[p0Index].position, m_Positions[p1Index].position
 			, scaleFactor);
+		finalPos = finalPosition;
 		return glm::translate(glm::mat4(1.0f), finalPosition);
 	}
 
-	glm::mat4 InterpolateRotation(float animationTime)
+	glm::mat4 InterpolateRotation(float animationTime, glm::quat &finalQuat)
 	{
 		if (1 == m_NumRotations)
 		{
@@ -156,11 +159,12 @@ private:
 		glm::quat finalRotation = glm::slerp(m_Rotations[p0Index].orientation, m_Rotations[p1Index].orientation
 			, scaleFactor);
 		finalRotation = glm::normalize(finalRotation);
+		finalQuat = finalRotation;
 		return glm::toMat4(finalRotation);
 
 	}
 
-	glm::mat4 InterpolateScaling(float animationTime)
+	glm::mat4 InterpolateScaling(float animationTime, glm::vec3 &finalScaling)
 	{
 		if (1 == m_NumScalings)
 			return glm::scale(glm::mat4(1.0f), m_Scales[0].scale);
@@ -171,6 +175,7 @@ private:
 			m_Scales[p1Index].timeStamp, animationTime);
 		glm::vec3 finalScale = glm::mix(m_Scales[p0Index].scale, m_Scales[p1Index].scale
 			, scaleFactor);
+		finalScaling = finalScale;
 		return glm::scale(glm::mat4(1.0f), finalScale);
 	}
 
