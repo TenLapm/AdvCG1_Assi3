@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="D:\Uni Works\Year3\Advcg1_Assi3\AdvCG1_Assi3\src\6.pbr\2.2.2.ibl_specular_textured\ibl_specular_textured.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Uni Works\Year3\Advcg1_Assi3\AdvCG1_Assi3\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="D:\Uni Works\Year3\Advcg1_Assi3\AdvCG1_Assi3\src\6.pbr\2.2.2.ibl_specular_textured\2.2.2.background.fs" />
+    <None Include="D:\Uni Works\Year3\Advcg1_Assi3\AdvCG1_Assi3\src\6.pbr\2.2.2.ibl_specular_textured\2.2.2.background.vs" />
+    <None Include="D:\Uni Works\Year3\Advcg1_Assi3\AdvCG1_Assi3\src\6.pbr\2.2.2.ibl_specular_textured\2.2.2.brdf.fs" />
+    <None Include="D:\Uni Works\Year3\Advcg1_Assi3\AdvCG1_Assi3\src\6.pbr\2.2.2.ibl_specular_textured\2.2.2.brdf.vs" />
+    <None Include="D:\Uni Works\Year3\Advcg1_Assi3\AdvCG1_Assi3\src\6.pbr\2.2.2.ibl_specular_textured\2.2.2.cubemap.vs" />
+    <None Include="D:\Uni Works\Year3\Advcg1_Assi3\AdvCG1_Assi3\src\6.pbr\2.2.2.ibl_specular_textured\2.2.2.equirectangular_to_cubemap.fs" />
+    <None Include="D:\Uni Works\Year3\Advcg1_Assi3\AdvCG1_Assi3\src\6.pbr\2.2.2.ibl_specular_textured\2.2.2.irradiance_convolution.fs" />
+    <None Include="D:\Uni Works\Year3\Advcg1_Assi3\AdvCG1_Assi3\src\6.pbr\2.2.2.ibl_specular_textured\2.2.2.pbr.fs" />
+    <None Include="D:\Uni Works\Year3\Advcg1_Assi3\AdvCG1_Assi3\src\6.pbr\2.2.2.ibl_specular_textured\2.2.2.pbr.vs" />
+    <None Include="D:\Uni Works\Year3\Advcg1_Assi3\AdvCG1_Assi3\src\6.pbr\2.2.2.ibl_specular_textured\2.2.2.prefilter.fs" />
+    <None Include="shadow_mapping.vs" />
+    <None Include="shadow_mapping.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{A2D38FDA-DB81-3537-B708-5321491BAAAD}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
