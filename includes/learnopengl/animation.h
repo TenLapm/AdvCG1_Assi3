@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <vector>
 #include <map>
 #include <glm/glm.hpp>
@@ -26,7 +27,13 @@ public:
 	{
 		Assimp::Importer importer;
 		const aiScene* scene = importer.ReadFile(animationPath, aiProcess_Triangulate);
-		assert(scene && scene->mRootNode);
+		if (!scene || !scene->mRootNode)
+		{
+			std::cout << "ERROR::ASSIMP::ANIMATION_LOAD_FAILED\n"
+				<< "Attempted Path: " << animationPath << "\n"
+				<< "Assimp Error: " << importer.GetErrorString() << std::endl;
+			return;
+		}
 		auto animation = scene->mAnimations[0];
 		m_Duration = animation->mDuration;
 		m_TicksPerSecond = animation->mTicksPerSecond;

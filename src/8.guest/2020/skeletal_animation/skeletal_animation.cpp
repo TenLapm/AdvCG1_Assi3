@@ -13,6 +13,7 @@
 #include <learnopengl/camera.h>
 #include <learnopengl/animator.h>
 #include <learnopengl/model_animation.h>
+#include "D:\Uni Works\Year3\Advcg1_Assi3\AdvCG1_Assi3\src\8.guest\2020\skeletal_animation\WaterSurface.h"
 
 #include <iostream>
 #include <algorithm>
@@ -31,10 +32,10 @@ Animation* pDeathAnim = nullptr;
 // --- ENEMY SETTINGS ---
 float ENEMY_SPAWN_RADIUS_MIN = 5.0f;
 float ENEMY_SPAWN_RADIUS_MAX = 20.0f;
-float ENEMY_SPEED = 3.5f;
+float ENEMY_SPEED = 0.0f; //3.5
 float ENEMY_HP = 1.0f;
 float ENEMY_HITBOX_RADIUS = 0.6f; 
-float ENEMY_BULLET_SPEED = 5.0f;
+float ENEMY_BULLET_SPEED = 0.0f; //1
 
 // --- WAVE SETTINGS ---
 int currentWave = 1;
@@ -278,6 +279,7 @@ unsigned int loadCubemap(std::vector<std::string> faces)
     glGenTextures(1, &textureID);
     glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 
+
     int width, height, nrChannels;
     stbi_set_flip_vertically_on_load(false);
 
@@ -331,6 +333,9 @@ int main()
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) { std::cout << "Failed to init GLAD" << std::endl; return -1; }
+    
+    WaterSurface water(50.0f, 50.0f, -0.4f, 0.2f);
+    
     stbi_set_flip_vertically_on_load(true);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
@@ -361,13 +366,54 @@ int main()
     glAttachShader(gunProg, vs); glAttachShader(gunProg, fs); glLinkProgram(gunProg);
     glDeleteShader(vs); glDeleteShader(fs);
 
-    const char* floorVS = "#version 330 core\nlayout (location = 0) in vec3 aPos;\nuniform mat4 model, view, projection;\nout vec3 FragPos;\nvoid main() { FragPos = vec3(model * vec4(aPos, 1.0)); gl_Position = projection * view * vec4(FragPos, 1.0); }";
-    const char* floorFS = "#version 330 core\nout vec4 FragColor;\nin vec3 FragPos;\nvoid main() { float checkSize = 1.0; float f = mod(floor(FragPos.x / checkSize) + floor(FragPos.z / checkSize), 2.0); vec3 color = mix(vec3(0.2), vec3(0.4), f); FragColor = vec4(color, 1.0); }";
-    unsigned int floorProg = glCreateProgram();
-    vs = glCreateShader(GL_VERTEX_SHADER); glShaderSource(vs, 1, &floorVS, NULL); glCompileShader(vs);
-    fs = glCreateShader(GL_FRAGMENT_SHADER); glShaderSource(fs, 1, &floorFS, NULL); glCompileShader(fs);
-    glAttachShader(floorProg, vs); glAttachShader(floorProg, fs); glLinkProgram(floorProg);
-    glDeleteShader(vs); glDeleteShader(fs);
+    const char* waterVS = "#version 330 core\n"
+        "layout (location = 0) in vec3 aPos;\n"
+        "layout (location = 1) in vec3 aNormal;\n"
+        "uniform mat4 model;\n"
+        "uniform mat4 view;\n"
+        "uniform mat4 projection;\n"
+        "out vec3 FragPos;\n"
+        "out vec3 Normal;\n"
+        "void main() {\n"
+        "    FragPos = vec3(model * vec4(aPos, 1.0));\n"
+        "    Normal = mat3(transpose(inverse(model))) * aNormal;\n"
+        "    gl_Position = projection * view * vec4(FragPos, 1.0);\n"
+        "}\n";
+
+    const char* waterFS = "#version 330 core\n"
+        "out vec4 FragColor;\n"
+        "in vec3 FragPos;\n"
+        "in vec3 Normal;\n"
+        "uniform vec3 viewPos;\n"
+        "uniform samplerCube skybox;\n"
+        "void main() {\n"
+        "    vec3 norm = normalize(Normal);\n"
+        "    vec3 viewDir = normalize(viewPos - FragPos);\n"
+        "    vec3 I = normalize(FragPos - viewPos);\n"
+        "    vec3 reflectDir = reflect(I, norm);\n"
+        "    vec3 reflection = texture(skybox, reflectDir).rgb;\n"
+        "    \n"
+        "    // 1. Slope Darkening: Make the sides of the waves visually darker\n"
+        "    float slope = 1.0 - max(dot(norm, vec3(0.0, 1.0, 0.0)), 0.0);\n"
+        "    vec3 waterColor = mix(vec3(0.05, 0.2, 0.4), vec3(0.0, 0.05, 0.15), slope * 10.0);\n"
+        "    \n"
+        "    // 2. Fresnel: More reflection at grazing angles\n"
+        "    float fresnel = pow(1.0 - max(dot(norm, viewDir), 0.0), 4.0);\n"
+        "    vec3 finalColor = mix(waterColor, reflection, 0.2 + 0.8 * fresnel);\n"
+        "    \n"
+        "    // 3. Specular 'Sun' highlight to show the shape of the mesh\n"
+        "    vec3 lightDir = normalize(vec3(10.0, 50.0, 10.0));\n"
+        "    vec3 halfDir = normalize(lightDir + viewDir);\n"
+        "    float spec = pow(max(dot(norm, halfDir), 0.0), 128.0);\n"
+        "    finalColor += vec3(1.0) * spec;\n"
+        "    \n"
+        "    FragColor = vec4(finalColor, 0.85);\n"
+        "}\n";
+    unsigned int waterProg = glCreateProgram();
+    unsigned int wvs = glCreateShader(GL_VERTEX_SHADER); glShaderSource(wvs, 1, &waterVS, NULL); glCompileShader(wvs);
+    unsigned int wfs = glCreateShader(GL_FRAGMENT_SHADER); glShaderSource(wfs, 1, &waterFS, NULL); glCompileShader(wfs);
+    glAttachShader(waterProg, wvs); glAttachShader(waterProg, wfs); glLinkProgram(waterProg);
+    glDeleteShader(wvs); glDeleteShader(wfs);
 
     unsigned int skyboxVAO, skyboxVBO;
     glGenVertexArrays(1, &skyboxVAO);
@@ -424,7 +470,7 @@ int main()
     glEnableVertexAttribArray(0); glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
 
     // --- LOAD ASSETS ---
-    Shader ourShader("anim_model.vs", "anim_model.fs");
+    Shader ourShader("src/8.guest/2020/skeletal_animation/anim_model.vs", "src/8.guest/2020/skeletal_animation/anim_model.fs");
     Model ourModel(FileSystem::getPath("resources/objects/mixamo/Ch49_nonPBR.dae"));
 
     // Load Animations into Globals
@@ -496,6 +542,16 @@ int main()
             if (!playerIsDead) {
                 isMoving = processInput(window);
                 isRunning = (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);
+
+                if (isMoving) {
+                    water.AddRipple(playerPos, 0.8f, 0.005f * timeScale);
+                }
+
+                for (const auto& e : enemies) {
+                    if (!e.isDead && timeScale > 0.05f) {
+                        water.AddRipple(e.position, 0.8f, 0.002f * timeScale);
+                    }
+                }
             }
 
             // Time Logic
@@ -509,6 +565,8 @@ int main()
 
             timeScale = glm::mix(timeScale, targetTimeScale, 15.0f * deltaTime);
             mouseMoveAmt = 0.0f;
+
+            water.Simulate(deltaTime);
 
             if (!playerIsDead) ManageWaves(deltaTime * timeScale);
 
@@ -642,13 +700,26 @@ int main()
         glm::mat4 proj = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = camera.GetViewMatrix();
 
-        // Floor
-        glUseProgram(floorProg);
-        glUniformMatrix4fv(glGetUniformLocation(floorProg, "projection"), 1, GL_FALSE, &proj[0][0]);
-        glUniformMatrix4fv(glGetUniformLocation(floorProg, "view"), 1, GL_FALSE, &view[0][0]);
         glm::mat4 model = glm::mat4(1.0f);
-        glUniformMatrix4fv(glGetUniformLocation(floorProg, "model"), 1, GL_FALSE, &model[0][0]);
-        glBindVertexArray(planeVAO); glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        glUniformMatrix4fv(glGetUniformLocation(waterProg, "model"), 1, GL_FALSE, &model[0][0]);
+        glUniform3fv(glGetUniformLocation(waterProg, "viewPos"), 1, &camera.Position[0]);
+
+        // --- DRAW WATER ---
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        glUseProgram(waterProg);
+        glUniformMatrix4fv(glGetUniformLocation(waterProg, "projection"), 1, GL_FALSE, &proj[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(waterProg, "view"), 1, GL_FALSE, &view[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(waterProg, "model"), 1, GL_FALSE, &model[0][0]);
+        glUniform3fv(glGetUniformLocation(waterProg, "viewPos"), 1, &camera.Position[0]);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+        glUniform1i(glGetUniformLocation(waterProg, "skybox"), 0);
+
+        water.Draw();
 
         // Walls
         glUseProgram(gunProg);
